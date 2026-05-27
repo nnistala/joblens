@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────────────────────
+# JobLens Crawl Configuration
+#
+# Lists the companies and career pages to crawl, grouped by
+# the spider / ATS platform that handles them.
+# ─────────────────────────────────────────────────────────────
+
+# Companies whose career sites are hosted on Greenhouse
+greenhouse_companies:
+  - slug: razorpay
+    name: Razorpay
+  - slug: cred-club
+    name: CRED
+  - slug: zerodha
+    name: Zerodha
+  - slug: groww
+    name: Groww
+  - slug: postman
+    name: Postman
+
+# Companies whose career sites are hosted on Lever
+lever_companies:
+  - slug: dream11
+    name: Dream11
+  - slug: meesho
+    name: Meesho
+  - slug: swiggy
+    name: Swiggy
+  - slug: slice
+    name: Slice
+
+# Generic HTML career pages (no known ATS API)
+career_pages:
+  - url: https://www.tcs.com/careers
+    name: Tata Consultancy Services
+  - url: https://careers.infosys.com
+    name: Infosys
+  - url: https://www.wipro.com/careers/
+    name: Wipro
+  - url: https://careers.hcltech.com
+    name: HCLTech
+  - url: https://www.techmahindra.com/en-in/careers/
+    name: Tech Mahindra
+  - url: https://careers.mindtree.com
+    name: LTIMindtree
+
+# Career pages that use Google-for-Jobs structured data (JSON-LD)
+google_schema_pages:
+  - url: https://www.flipkart.com/careers
+    name: Flipkart
+  - url: https://www.zomato.com/careers
+    name: Zomato
+
+# Indeed India search queries
+indeed_searches:
+  - query: "software engineer"
+    location: "India"
+  - query: "data scientist"
+    location: "Bangalore"
+  - query: "product manager"
+    location: "Mumbai"
+  - query: "devops engineer"
+    location: "Hyderabad"
+  - query: "frontend developer"
+    location: "India"
