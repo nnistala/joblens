@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JobLens — Technical & Functional Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg2: #111114;
+    --bg3: #18181c;
+    --bg4: #1f1f25;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --text3: #5a5a72;
+    --accent: #6c63ff;
+    --accent2: #8b5cf6;
+    --green: #22d3a0;
+    --orange: #f97316;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --blue: #3b82f6;
+    --pink: #ec4899;
+    --tab-bg: #1a1a20;
+    --tab-active: #2a2a35;
+    --pill-active: #2d2d3a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,11,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-icon {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-sub {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.3px;
+  }
+  .badge-purple { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.25); }
+  .badge-green  { background: rgba(34,211,160,0.12); color: var(--green);  border: 1px solid rgba(34,211,160,0.2); }
+  .badge-orange { background: rgba(249,115,22,0.12); color: var(--orange); border: 1px solid rgba(249,115,22,0.2); }
+
+  /* ── Tab switcher (Claude-style pill) ── */
+  .tab-switcher-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 32px 32px 0;
+  }
+
+  .tab-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: var(--tab-bg);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 20px;
+    border-radius: 100px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    font-size: 13.5px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .tab-btn:hover { color: var(--text2); }
+
+  .tab-btn.active {
+    background: var(--pill-active);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .tab-btn svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .tab-btn.active svg { opacity: 1; }
+
+  /* ── Content area ── */
+  .content-area {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px 32px 80px;
+  }
+
+  .tab-panel { display: none; animation: fadeSlide 0.3s ease; }
+  .tab-panel.active { display: block; }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Hero section ── */
+  .hero {
+    text-align: center;
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,0.5));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--text2);
+    max-width: 640px;
+    margin: 0 auto 28px;
+    line-height: 1.7;
+  }
+
+  .hero-badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── Section headings ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  /* ── Grid layouts ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 40px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 40px; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--border2); transform: translateY(-1px); }
+
+  .card-accent { border-left: 3px solid var(--accent); }
+  .card-green  { border-left: 3px solid var(--green);  }
+  .card-orange { border-left: 3px solid var(--orange); }
+  .card-red    { border-left: 3px solid var(--red);    }
+  .card-blue   { border-left: 3px solid var(--blue);   }
+  .card-pink   { border-left: 3px solid var(--pink);   }
+
+  .card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+  .icon-purple { background: rgba(108,99,255,0.15); }
+  .icon-green  { background: rgba(34,211,160,0.12); }
+  .icon-orange { background: rgba(249,115,22,0.12); }
+  .icon-blue   { background: rgba(59,130,246,0.12); }
+  .icon-pink   { background: rgba(236,72,153,0.12); }
+
+  .card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Stat cards ── */
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff, rgba(255,255,255,0.6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label { font-size: 12.5px; color: var(--text2); margin-top: 4px; }
+
+  /* ── Fragmentation viz ── */
+  .frag-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 40px;
+  }
+  .frag-bar h2 { margin-bottom: 6px; }
+  .frag-bar > p { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+
+  .platform-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .platform-name {
+    font-size: 13px;
+    font-weight: 500;
+    width: 90px;
+    flex-shrink: 0;
+    color: var(--text2);
+  }
+  .bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--bg4);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    animation: growBar 1s cubic-bezier(0.4,0,0.2,1) forwards;
+    transform-origin: left;
+  }
+  @keyframes growBar {
+    from { width: 0 !important; }
+  }
+  .bar-pct {
+    font-size: 12px;
+    font-weight: 600;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .bar-count {
+    font-size: 11px;
+    color: var(--text3);
+    width: 70px;
+    text-align: right;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Timeline / phases ── */
+  .timeline { position: relative; padding-left: 28px; margin-bottom: 40px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .timeline-item { position: relative; margin-bottom: 28px; }
+  .timeline-dot {
+    position: absolute;
+    left: -24px;
+    top: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    flex-shrink: 0;
+  }
+  .dot-purple { background: var(--accent); }
+  .dot-green  { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+  .timeline-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .timeline-sub { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
+  .timeline-tasks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .task-chip {
+    font-size: 11.5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  /* ── Tier cards ── */
+  .tier-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 40px; }
+  .tier-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .tier-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+  .tier-card.popular {
+    border-color: rgba(108,99,255,0.4);
+    background: linear-gradient(135deg, rgba(108,99,255,0.06), var(--bg2));
+  }
+  .tier-card.popular::before {
+    content: 'MOST POPULAR';
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 12px;
+    background: var(--accent);
+    border-radius: 100px;
+    color: #fff;
+  }
+  .tier-price {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin: 8px 0 4px;
+  }
+  .tier-period { font-size: 12px; color: var(--text3); }
+  .tier-feature {
+    font-size: 13px;
+    color: var(--text2);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tier-feature:last-child { border-bottom: none; }
+  .check { color: var(--green); font-size: 13px; }
+
+  /* ── Technical: architecture diagram ── */
+  .arch-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 28px;
+    margin-bottom: 40px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid;
+    text-align: center;
+    min-width: 110px;
+  }
+  .arch-box.source  { background: rgba(59,130,246,0.1);  border-color: rgba(59,130,246,0.3);  color: #93c5fd; }
+  .arch-box.crawler { background: rgba(249,115,22,0.1);  border-color: rgba(249,115,22,0.3);  color: #fdba74; }
+  .arch-box.queue   { background: rgba(234,179,8,0.1);   border-color: rgba(234,179,8,0.3);   color: #fde047; }
+  .arch-box.db      { background: rgba(34,211,160,0.1);  border-color: rgba(34,211,160,0.3);  color: #6ee7b7; }
+  .arch-box.api     { background: rgba(108,99,255,0.12); border-color: rgba(108,99,255,0.3);  color: #a5b4fc; }
+  .arch-box.front   { background: rgba(236,72,153,0.1);  border-color: rgba(236,72,153,0.3);  color: #f9a8d4; }
+  .arch-box.infra   { background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.2); color: #94a3b8; }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--text3);
+    font-size: 18px;
+    margin: 2px 0;
+    letter-spacing: -2px;
+  }
+
+  .arch-label {
+    font-size: 10px;
+    text-align: center;
+    color: var(--text3);
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Code block ── */
+  .code-block {
+    background: #0d0d11;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .code-block-header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-file {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-left: 4px;
+  }
+  .code-block pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.7;
+    font-family: 'JetBrains Mono', monospace;
+    color: #abb2bf;
+  }
+  .kw { color: #c678dd; }
+  .fn { color: #61afef; }
+  .str { color: #98c379; }
+  .cm { color: #5c6370; font-style: italic; }
+  .typ { color: #e5c07b; }
+  .num { color: #d19a66; }
+  .punc { color: #abb2bf; }
+
+  /* ── Stack pills ── */
+  .stack-section { margin-bottom: 40px; }
+  .stack-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .stack-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .stack-pill:hover { border-color: var(--border2); color: var(--text); }
+  .stack-pill .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Dedup pipeline ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .pipeline-step {
+    flex: 1;
+    padding: 20px 16px;
+    text-align: center;
+    position: relative;
+    border-right: 1px solid var(--border);
+  }
+  .pipeline-step:last-child { border-right: none; }
+  .pipeline-step::after {
+    content: '→';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 16px;
+    z-index: 1;
+    background: var(--bg2);
+    padding: 0 2px;
+  }
+  .pipeline-step:last-child::after { display: none; }
+  .step-num {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .step-desc { font-size: 11.5px; color: var(--text3); line-height: 1.5; }
+
+  /* ── DB schema table ── */
+  .schema-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-bottom: 8px;
+  }
+  .schema-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+  }
+  .schema-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: top;
+  }
+  .schema-table tr:last-child td { border-bottom: none; }
+  .col-name {
+    font-family: 'JetBrains Mono', monospace;
+    color: #7dd3fc;
+    font-size: 12px;
+  }
+  .col-type {
+    font-family: 'JetBrains Mono', monospace;
+    color: #a78bfa;
+    font-size: 11.5px;
+  }
+  .col-note { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Legal tier table ── */
+  .legal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 40px; }
+  .legal-card {
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid;
+  }
+  .legal-safe   { background: rgba(34,211,160,0.06); border-color: rgba(34,211,160,0.2); }
+  .legal-caution{ background: rgba(234,179,8,0.06);  border-color: rgba(234,179,8,0.2); }
+  .legal-avoid  { background: rgba(239,68,68,0.06);  border-color: rgba(239,68,68,0.2); }
+  .legal-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legal-item { font-size: 13px; color: var(--text2); padding: 5px 0; display: flex; gap: 8px; align-items: flex-start; }
+  .legal-item-dot { flex-shrink: 0; margin-top: 6px; width: 5px; height: 5px; border-radius: 50%; }
+
+  /* ── API endpoints ── */
+  .endpoint-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 40px; }
+  .endpoint-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+  }
+  .method {
+    font-size: 11px;
+    font-weight: 700;
+    width: 40px;
+    text-align: center;
+    padding: 2px 0;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .method-get  { background: rgba(34,211,160,0.15); color: var(--green); }
+  .method-post { background: rgba(59,130,246,0.15);  color: var(--blue); }
+  .method-del  { background: rgba(239,68,68,0.15);   color: var(--red); }
+  .endpoint-path { color: #e8e8f0; flex: 1; }
+  .endpoint-desc { font-size: 11.5px; color: var(--text3); font-family: 'Inter', sans-serif; text-align: right; }
+
+  /* ── AWS infra ── */
+  .infra-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 40px; }
+  .infra-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .infra-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .infra-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .infra-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+  /* ── Misc utils ── */
+  .mb-40 { margin-bottom: 40px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(139,92,246,0.05));
+    border: 1px solid rgba(108,99,255,0.2);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 40px;
+  }
+  .highlight-box h3 { color: #a5b4fc; margin-bottom: 8px; }
+  .highlight-box p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+
+  .list-clean { list-style: none; }
+  .list-clean li {
+    font-size: 13.5px;
+    color: var(--text2);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+  .list-clean li:last-child { border-bottom: none; }
+  .list-dot { flex-shrink: 0; margin-top: 8px; }
+
+  footer {
+    text-align: center;
+    padding: 32px;
+    color: var(--text3);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <span>JobLens<span class="logo-sub"> / Overview</span></span>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <span class="badge badge-purple">v0.1.0 Alpha</span>
+    <span class="badge badge-green">India-first</span>
+    <span class="badge badge-orange">Planning Phase</span>
+  </div>
+</div>
+
+<!-- Tab Switcher -->
+<div class="tab-switcher-wrap">
+  <div class="tab-switcher">
+    <button class="tab-btn active" id="tab-func" onclick="switchTab('func')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      Functional
+    </button>
+    <button class="tab-btn" id="tab-tech" onclick="switchTab('tech')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+      </svg>
+      Technical
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════ FUNCTIONAL TAB ═══════════════════ -->
+<div class="content-area">
+<div class="tab-panel active" id="panel-func">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Product Vision
+    </div>
+    <h1>Every Job.<br/>One Place. India-First.</h1>
+    <p>JobLens is a unified job aggregator that surfaces 100% of available openings — not just what's on LinkedIn or Naukri — by crawling company career pages, ATS platforms, and public boards with smart deduplication.</p>
+    <div class="hero-badges">
+      <span class="badge badge-purple">Unified Aggregation</span>
+      <span class="badge badge-green">Deduplication Engine</span>
+      <span class="badge badge-orange">Freemium B2C</span>
+    </div>
+  </div>
+
+  <!-- The Problem -->
+  <div class="section-label">The Problem</div>
+  <div class="frag-bar mb-40">
+    <h2>Job Market Fragmentation</h2>
+    <p>Amazon has ~2,200 active openings. Here's how they're spread — most job seekers see only a fraction.</p>
+    <br/>
+    <div class="platform-row">
+      <span class="platform-name">Career Page</span>
+      <div class="bar-track"><div class="bar-fill" style="width:100%; background: linear-gradient(90deg, #6c63ff, #8b5cf6);"></div></div>
+      <span class="bar-pct" style="color:#a5b4fc">100%</span>
+      <span class="bar-count">~2,200</span>
+    </div>
+    <div class="platform-row">
+      <span class="platform-name">LinkedIn</span>
+      <div class="bar-track"><div class="bar-fill" style="width:37%; background: linear-gradient(90deg, #0a66c2, #3b82f6);"></div></div>
+      <span class="bar-pct" style="color:#60a5fa">37%</span>
+      <span class="bar-count">820</span>
+    </div>
+    <div class="platform-row">
+      <span class="platform-name">Indeed</span>
+      <div class="bar-track"><div class="bar-fill" style="width:28%; background: linear-gradient(90deg, #003a9b, #4f46e5);"></div></div>
+      <span class="bar-pct" style="color:#818cf8">28%</span>
+      <span class="bar-count">610</span>
+    </div>
+    <div class="platform-row">
+      <span class="platform-name">Naukri</span>
+      <div class="bar-track"><div class="bar-fill" style="width:6%; background: linear-gradient(90deg, #f97316, #fb923c);"></div></div>
+      <span class="bar-pct" style="color:#fb923c">6%</span>
+      <span class="bar-count">140</span>
+    </div>
+    <div class="platform-row">
+      <span class="platform-name">Other Boards</span>
+      <div class="bar-track"><div class="bar-fill" style="width:15%; background: linear-gradient(90deg, #22d3a0, #34d399);"></div></div>
+      <span class="bar-pct" style="color:#6ee7b7">15%</span>
+      <span class="bar-count">320</span>
+    </div>
+    <div class="platform-row">
+      <span class="platform-name">Common (all 3)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:5%; background: linear-gradient(90deg, #ec4899, #f472b6);"></div></div>
+      <span class="bar-pct" style="color:#f9a8d4">5%</span>
+      <span class="bar-count">120</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid-4 mb-40">
+    <div class="stat-card">
+      <div class="stat-num" style="color:#a5b4fc">95%</div>
+      <div class="stat-label">of jobs missed if you use all 3 major platforms combined</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#6ee7b7">200+</div>
+      <div class="stat-label">Indian company career pages targeted in Phase 1</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#fdba74">70+</div>
+      <div class="stat-label">companies pre-seeded in the database at launch</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#f9a8d4">5</div>
+      <div class="stat-label">ATS platforms crawled (Greenhouse, Lever, Workday, Taleo, iCIMS)</div>
+    </div>
+  </div>
+
+  <!-- Target Market -->
+  <div class="section-label">Target Market</div>
+  <div class="grid-2 mb-40">
+    <div class="card card-accent">
+      <div class="card-icon icon-purple">🎯</div>
+      <h3>Primary: Job Seekers</h3>
+      <p>Mid-level to senior professionals in India actively or passively exploring opportunities. Frustrated by incomplete listings and stale postings on existing platforms. Need freshness + completeness.</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-icon icon-blue">🏢</div>
+      <h3>Secondary: HR & Recruiters</h3>
+      <p>HR teams from Indian companies who want to self-register their career page for direct indexing via the HR Direct Portal. Gets their openings surfaced to a targeted, engaged talent pool.</p>
+    </div>
+  </div>
+
+  <!-- Personas -->
+  <div class="section-label">User Personas</div>
+  <div class="grid-3 mb-40">
+    <div class="card">
+      <div style="font-size:28px; margin-bottom:12px;">👩‍💻</div>
+      <h3>Priya, 4 YOE Software Engineer</h3>
+      <p>Searching for product companies. Frustrated that Naukri shows services jobs; LinkedIn shows same roles from 10 companies. Wants one filtered view across all sources.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:28px; margin-bottom:12px;">🧑‍💼</div>
+      <h3>Rahul, Senior Data Scientist</h3>
+      <p>Wants GCC / MNC opportunities that aren't publicly advertised on mainstream boards. Company career pages are his go-to, but browsing 200 sites is impossible. JobLens does it for him.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:28px; margin-bottom:12px;">👨‍💼</div>
+      <h3>Meera, HR Manager at a Startup</h3>
+      <p>Posts openings on LinkedIn but wants broader reach. Registers via HR Direct Portal — one-time setup, openings automatically indexed and shown to relevant candidates.</p>
+    </div>
+  </div>
+
+  <!-- Core Features -->
+  <div class="section-label">Core Features</div>
+  <div class="grid-3 mb-40">
+    <div class="card card-accent">
+      <div class="card-icon icon-purple">🕷️</div>
+      <h3>Multi-Source Aggregation</h3>
+      <p>Crawls company career pages (Greenhouse, Lever, Workday, Taleo), public job boards, and Google for Jobs structured data. Updated daily with freshness checks.</p>
+    </div>
+    <div class="card card-green">
+      <div class="card-icon icon-green">🔄</div>
+      <h3>Smart Deduplication</h3>
+      <p>3-stage pipeline: exact hash → fuzzy title match (>85% similarity) → semantic cosine similarity. Merges listings from 5 platforms into 1 canonical job card.</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-icon icon-blue">🔍</div>
+      <h3>Full-Text Search</h3>
+      <p>OpenSearch-powered search with filters: role, city, remote/hybrid/onsite, experience, salary range, company size, ATS platform, posted date.</p>
+    </div>
+    <div class="card card-orange">
+      <div class="card-icon icon-orange">📬</div>
+      <h3>Smart Job Alerts</h3>
+      <p>Save a search, get notified when matching jobs appear. Digest frequency: real-time, daily, weekly. Delivered via email; push notifications in Phase 2.</p>
+    </div>
+    <div class="card card-pink">
+      <div class="card-icon icon-pink">🏢</div>
+      <h3>HR Direct Portal</h3>
+      <p>Companies self-register their career page URL. JobLens crawls it on a schedule, indexes all openings, and drives qualified applicant traffic back.</p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--accent);">
+      <div class="card-icon icon-purple">💰</div>
+      <h3>Apply Flow</h3>
+      <p>Redirect for scraped jobs (opens original source). Direct apply for partnered companies. Candidates always apply at source — JobLens is the discovery layer, not a wall.</p>
+    </div>
+  </div>
+
+  <!-- Business Model -->
+  <div class="section-label">Business Model — Freemium</div>
+  <div class="tier-grid mb-40">
+    <div class="tier-card">
+      <div class="badge badge-green" style="display:inline-block; margin-bottom:8px;">FREE</div>
+      <h3>Explorer</h3>
+      <div class="tier-price">₹0</div>
+      <div class="tier-period">forever</div>
+      <br/>
+      <div class="tier-feature"><span class="check">✓</span> Search all aggregated jobs</div>
+      <div class="tier-feature"><span class="check">✓</span> 3 saved alerts</div>
+      <div class="tier-feature"><span class="check">✓</span> 5 saved jobs</div>
+      <div class="tier-feature"><span class="check">✓</span> Basic filters</div>
+      <div class="tier-feature" style="color:var(--text3);">✗ Salary data</div>
+      <div class="tier-feature" style="color:var(--text3);">✗ Company insights</div>
+    </div>
+    <div class="tier-card popular">
+      <div class="badge badge-purple" style="display:inline-block; margin-bottom:8px;">PRO</div>
+      <h3>Professional</h3>
+      <div class="tier-price">₹299<span style="font-size:18px;font-weight:400;">/mo</span></div>
+      <div class="tier-period">billed monthly</div>
+      <br/>
+      <div class="tier-feature"><span class="check">✓</span> Everything in Free</div>
+      <div class="tier-feature"><span class="check">✓</span> Unlimited alerts</div>
+      <div class="tier-feature"><span class="check">✓</span> Salary range filters</div>
+      <div class="tier-feature"><span class="check">✓</span> Company hiring trends</div>
+      <div class="tier-feature"><span class="check">✓</span> Source breakdown per job</div>
+      <div class="tier-feature"><span class="check">✓</span> Early alerts (6hr head-start)</div>
+    </div>
+    <div class="tier-card">
+      <div class="badge badge-orange" style="display:inline-block; margin-bottom:8px;">ENTERPRISE</div>
+      <h3>HR Direct</h3>
+      <div class="tier-price">₹4,999<span style="font-size:18px;font-weight:400;">/mo</span></div>
+      <div class="tier-period">per company</div>
+      <br/>
+      <div class="tier-feature"><span class="check">✓</span> Career page auto-indexing</div>
+      <div class="tier-feature"><span class="check">✓</span> Direct apply integration</div>
+      <div class="tier-feature"><span class="check">✓</span> Applicant analytics</div>
+      <div class="tier-feature"><span class="check">✓</span> Priority freshness (6hr crawls)</div>
+      <div class="tier-feature"><span class="check">✓</span> Company profile page</div>
+      <div class="tier-feature"><span class="check">✓</span> Dedicated support</div>
+    </div>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section-label">Competitive Landscape</div>
+  <div class="grid-2 mb-40">
+    <div class="card">
+      <h3 style="margin-bottom:16px;">How JobLens Wins</h3>
+      <ul class="list-clean">
+        <li><span class="list-dot">🟢</span><span><strong>Completeness</strong> — career pages first means 100% of openings, not a subset</span></li>
+        <li><span class="list-dot">🟢</span><span><strong>Freshness</strong> — verified within 24h; stale jobs flagged and removed</span></li>
+        <li><span class="list-dot">🟢</span><span><strong>No ghost postings</strong> — dedup + freshness kills duplicates and expired listings</span></li>
+        <li><span class="list-dot">🟢</span><span><strong>India-optimised</strong> — filters for INR salary, city tiers, Indian company types</span></li>
+        <li><span class="list-dot">🟢</span><span><strong>No login wall</strong> — browse all jobs without account; sign up only to save/alert</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:16px;">Competitors at a Glance</h3>
+      <ul class="list-clean">
+        <li><span class="list-dot">🔵</span><span><strong>Naukri</strong> — dominates India volume, weak at stealth/leadership roles, login-wall</span></li>
+        <li><span class="list-dot">🔵</span><span><strong>LinkedIn</strong> — best for networking, suffers easy-apply spam & ghost posts</span></li>
+        <li><span class="list-dot">🔵</span><span><strong>Indeed</strong> — aggregator but stale, duplicate issues, weak India focus</span></li>
+        <li><span class="list-dot">🔵</span><span><strong>Google for Jobs</strong> — great SEO, no product experience, no alerts</span></li>
+        <li><span class="list-dot">🔵</span><span><strong>Instahyre / Cutshort</strong> — startup/tech niche, not comprehensive</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Roadmap -->
+  <div class="section-label">Product Roadmap</div>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot dot-purple"></div>
+      <div class="timeline-title">
+        Phase 1 — Weeks 1–4
+        <span class="badge badge-purple">MVP</span>
+      </div>
+      <div class="timeline-sub">Core foundation: crawl → deduplicate → search → display. Get to first real job listings visible on the frontend.</div>
+      <div class="timeline-tasks">
+        <span class="task-chip">DB schema & migrations</span>
+        <span class="task-chip">Greenhouse spider</span>
+        <span class="task-chip">Lever spider</span>
+        <span class="task-chip">Generic career page spider</span>
+        <span class="task-chip">Exact-hash dedup</span>
+        <span class="task-chip">Search API</span>
+        <span class="task-chip">Next.js job listing page</span>
+        <span class="task-chip">Job detail page</span>
+        <span class="task-chip">Basic filters</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot dot-green"></div>
+      <div class="timeline-title">
+        Phase 2 — Weeks 5–8
+        <span class="badge badge-green">Growth</span>
+      </div>
+      <div class="timeline-sub">Auth, user features, more data sources, fuzzy dedup. Start onboarding HR partners.</div>
+      <div class="timeline-tasks">
+        <span class="task-chip">Google/LinkedIn OAuth</span>
+        <span class="task-chip">Job alerts system</span>
+        <span class="task-chip">HR Direct Portal</span>
+        <span class="task-chip">Indeed India spider</span>
+        <span class="task-chip">Google Jobs schema spider</span>
+        <span class="task-chip">Fuzzy title dedup</span>
+        <span class="task-chip">User dashboard</span>
+        <span class="task-chip">Saved jobs</span>
+        <span class="task-chip">More ATS spiders (Workday)</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot dot-orange"></div>
+      <div class="timeline-title">
+        Phase 3 — Weeks 9–12
+        <span class="badge badge-orange">Scale</span>
+      </div>
+      <div class="timeline-sub">Monetisation, SEO scale, semantic dedup, admin tooling, PWA for mobile.</div>
+      <div class="timeline-tasks">
+        <span class="task-chip">Razorpay subscriptions</span>
+        <span class="task-chip">Admin dashboard</span>
+        <span class="task-chip">SEO landing pages</span>
+        <span class="task-chip">PWA / mobile</span>
+        <span class="task-chip">Semantic dedup (embeddings)</span>
+        <span class="task-chip">Company profiles</span>
+        <span class="task-chip">Salary analytics</span>
+        <span class="task-chip">Email digest system</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end func panel -->
+
+
+<!-- ═══════════════════ TECHNICAL TAB ═══════════════════ -->
+<div class="tab-panel" id="panel-tech">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Technical Architecture
+    </div>
+    <h1>How It's Built.<br/>Why These Choices.</h1>
+    <p>FastAPI async backend, Scrapy crawlers with Playwright for JS-heavy pages, Celery task queue, OpenSearch for full-text, and a Next.js SSR frontend — all containerised and deployable to AWS ECS with one Terraform apply.</p>
+    <div class="hero-badges">
+      <span class="badge badge-purple">Python 3.12 / FastAPI</span>
+      <span class="badge badge-green">Next.js 14 / TypeScript</span>
+      <span class="badge badge-orange">AWS ECS / Terraform</span>
+    </div>
+  </div>
+
+  <!-- System Architecture Diagram -->
+  <div class="section-label">System Architecture</div>
+  <div class="arch-diagram mb-40">
+
+    <div class="arch-label">Data Sources</div>
+    <div class="arch-layer">
+      <div class="arch-box source">Company Career Pages</div>
+      <div class="arch-box source">Greenhouse ATS</div>
+      <div class="arch-box source">Lever ATS</div>
+      <div class="arch-box source">Indeed India</div>
+      <div class="arch-box source">Google Jobs Schema</div>
+      <div class="arch-box source">HR Direct Portal</div>
+    </div>
+
+    <div class="arch-arrow">↓ ↓ ↓ ↓ ↓</div>
+
+    <div class="arch-label">Crawl Layer</div>
+    <div class="arch-layer">
+      <div class="arch-box crawler">Scrapy Spiders</div>
+      <div class="arch-box crawler">Playwright (JS-heavy)</div>
+      <div class="arch-box crawler">User-Agent Rotation</div>
+      <div class="arch-box crawler">robots.txt respect</div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-label">Queue & Processing</div>
+    <div class="arch-layer">
+      <div class="arch-box queue">Redis Broker</div>
+      <div class="arch-box queue">Celery Workers</div>
+      <div class="arch-box queue">Normalize Pipeline</div>
+      <div class="arch-box queue">Dedup Engine</div>
+      <div class="arch-box queue">Celery Beat (scheduler)</div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-label">Storage Layer</div>
+    <div class="arch-layer">
+      <div class="arch-box db">PostgreSQL 16</div>
+      <div class="arch-box db">OpenSearch 2.17</div>
+      <div class="arch-box db">Redis 7 (cache)</div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-label">API Layer</div>
+    <div class="arch-layer">
+      <div class="arch-box api">FastAPI (Python 3.12)</div>
+      <div class="arch-box api">SQLAlchemy 2.0 async</div>
+      <div class="arch-box api">JWT + OAuth2</div>
+      <div class="arch-box api">OpenAPI / Swagger</div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-label">Frontend</div>
+    <div class="arch-layer">
+      <div class="arch-box front">Next.js 14 App Router</div>
+      <div class="arch-box front">TypeScript</div>
+      <div class="arch-box front">Tailwind CSS</div>
+      <div class="arch-box front">shadcn/ui</div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-label">Infrastructure</div>
+    <div class="arch-layer">
+      <div class="arch-box infra">AWS ECS (Fargate)</div>
+      <div class="arch-box infra">RDS PostgreSQL</div>
+      <div class="arch-box infra">ElastiCache Redis</div>
+      <div class="arch-box infra">OpenSearch Service</div>
+      <div class="arch-box infra">S3 + CloudFront</div>
+      <div class="arch-box infra">Terraform IaC</div>
+    </div>
+
+  </div>
+
+  <!-- Tech Stack Details -->
+  <div class="section-label">Full Stack Breakdown</div>
+  <div class="stack-section mb-40">
+    <div class="section-label" style="font-size:10px;">Backend</div>
+    <div class="stack-row">
+      <div class="stack-pill"><div class="dot" style="background:#3776ab;"></div> Python 3.12</div>
+      <div class="stack-pill"><div class="dot" style="background:#009688;"></div> FastAPI</div>
+      <div class="stack-pill"><div class="dot" style="background:#f7931e;"></div> SQLAlchemy 2.0 (async)</div>
+      <div class="stack-pill"><div class="dot" style="background:#5865f2;"></div> Alembic migrations</div>
+      <div class="stack-pill"><div class="dot" style="background:#37b24d;"></div> Pydantic v2</div>
+      <div class="stack-pill"><div class="dot" style="background:#dd3527;"></div> pytest + httpx</div>
+    </div>
+    <div class="section-label" style="font-size:10px;">Crawling</div>
+    <div class="stack-row">
+      <div class="stack-pill"><div class="dot" style="background:#60a917;"></div> Scrapy</div>
+      <div class="stack-pill"><div class="dot" style="background:#2ead6e;"></div> Playwright (JS rendering)</div>
+      <div class="stack-pill"><div class="dot" style="background:#f59e0b;"></div> Celery + Redis broker</div>
+      <div class="stack-pill"><div class="dot" style="background:#e11d48;"></div> Celery Beat (cron)</div>
+      <div class="stack-pill"><div class="dot" style="background:#8b5cf6;"></div> User-Agent rotation</div>
+    </div>
+    <div class="section-label" style="font-size:10px;">Databases</div>
+    <div class="stack-row">
+      <div class="stack-pill"><div class="dot" style="background:#336791;"></div> PostgreSQL 16</div>
+      <div class="stack-pill"><div class="dot" style="background:#005eb8;"></div> OpenSearch 2.17</div>
+      <div class="stack-pill"><div class="dot" style="background:#dc382d;"></div> Redis 7</div>
+      <div class="stack-pill"><div class="dot" style="background:#22d3a0;"></div> asyncpg driver</div>
+    </div>
+    <div class="section-label" style="font-size:10px;">Frontend</div>
+    <div class="stack-row">
+      <div class="stack-pill"><div class="dot" style="background:#000;"></div> Next.js 14</div>
+      <div class="stack-pill"><div class="dot" style="background:#3178c6;"></div> TypeScript</div>
+      <div class="stack-pill"><div class="dot" style="background:#06b6d4;"></div> Tailwind CSS</div>
+      <div class="stack-pill"><div class="dot" style="background:#18181b;"></div> shadcn/ui</div>
+      <div class="stack-pill"><div class="dot" style="background:#f97316;"></div> TanStack Query</div>
+    </div>
+    <div class="section-label" style="font-size:10px;">Infrastructure & CI/CD</div>
+    <div class="stack-row">
+      <div class="stack-pill"><div class="dot" style="background:#ff9900;"></div> AWS ECS Fargate</div>
+      <div class="stack-pill"><div class="dot" style="background:#7b42bc;"></div> Terraform</div>
+      <div class="stack-pill"><div class="dot" style="background:#2088ff;"></div> GitHub Actions</div>
+      <div class="stack-pill"><div class="dot" style="background:#2496ed;"></div> Docker + ECR</div>
+      <div class="stack-pill"><div class="dot" style="background:#f05032;"></div> Git</div>
+    </div>
+  </div>
+
+  <!-- Deduplication Pipeline -->
+  <div class="section-label">Deduplication Pipeline</div>
+  <div class="pipeline mb-40">
+    <div class="pipeline-step">
+      <div class="step-num">Step 1</div>
+      <div class="step-title" style="color:#a5b4fc;">Exact Hash</div>
+      <div class="step-desc">SHA-256 of<br/>company_slug + title_normalised + city<br/><span style="color:#6c63ff;">O(1) lookup</span></div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">Step 2</div>
+      <div class="step-title" style="color:#6ee7b7;">Fuzzy Match</div>
+      <div class="step-desc">Same company + >85% title similarity<br/>(rapidfuzz token_sort_ratio)<br/>+ same city</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">Phase 2</div>
+      <div class="step-title" style="color:#fdba74;">Semantic</div>
+      <div class="step-desc">Sentence embeddings<br/>cosine similarity > 0.92<br/>via sentence-transformers</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">Output</div>
+      <div class="step-title" style="color:#f9a8d4;">Canonical Job</div>
+      <div class="step-desc">Single job record with<br/>source_count, dedup_cluster_id,<br/>all source URLs</div>
+    </div>
+  </div>
+
+  <!-- Database Schema -->
+  <div class="section-label">Database Schema — Key Tables</div>
+  <div class="two-col mb-40">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:14px 16px; border-bottom:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text2); font-family:'JetBrains Mono',monospace;">jobs</div>
+      <table class="schema-table">
+        <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">UUID</td><td class="col-note">PK, auto-generated</td></tr>
+        <tr><td class="col-name">company_id</td><td class="col-type">UUID FK</td><td class="col-note">→ companies.id CASCADE</td></tr>
+        <tr><td class="col-name">title</td><td class="col-type">VARCHAR(512)</td><td class="col-note">Normalised title</td></tr>
+        <tr><td class="col-name">location_city</td><td class="col-type">VARCHAR(255)</td><td class="col-note">Parsed city</td></tr>
+        <tr><td class="col-name">job_type</td><td class="col-type">ENUM</td><td class="col-note">full_time, contract, intern</td></tr>
+        <tr><td class="col-name">work_mode</td><td class="col-type">ENUM</td><td class="col-note">remote, hybrid, onsite</td></tr>
+        <tr><td class="col-name">salary_min/max</td><td class="col-type">INTEGER</td><td class="col-note">INR, annual</td></tr>
+        <tr><td class="col-name">skills</td><td class="col-type">TEXT[]</td><td class="col-note">Postgres ARRAY</td></tr>
+        <tr><td class="col-name">dedup_cluster_id</td><td class="col-type">UUID</td><td class="col-note">Links duplicate cluster</td></tr>
+        <tr><td class="col-name">source_count</td><td class="col-type">INTEGER</td><td class="col-note"># platforms listing this job</td></tr>
+        <tr><td class="col-name">quality_score</td><td class="col-type">FLOAT</td><td class="col-note">Computed freshness score</td></tr>
+        <tr><td class="col-name">apply_mode</td><td class="col-type">ENUM</td><td class="col-note">redirect / direct</td></tr>
+        <tr><td class="col-name">is_active</td><td class="col-type">BOOLEAN</td><td class="col-note">Freshness-checked flag</td></tr>
+      </table>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text2); font-family:'JetBrains Mono',monospace;">job_sources</div>
+        <table class="schema-table">
+          <tr><th>Column</th><th>Type</th></tr>
+          <tr><td class="col-name">job_id</td><td class="col-type">UUID FK</td></tr>
+          <tr><td class="col-name">source_platform</td><td class="col-type">ENUM</td></tr>
+          <tr><td class="col-name">source_url</td><td class="col-type">VARCHAR(1024)</td></tr>
+          <tr><td class="col-name">raw_description_hash</td><td class="col-type">VARCHAR(128)</td></tr>
+          <tr><td class="col-name">crawled_at</td><td class="col-type">TIMESTAMPTZ</td></tr>
+          <tr><td class="col-name">last_verified_at</td><td class="col-type">TIMESTAMPTZ</td></tr>
+        </table>
+      </div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text2); font-family:'JetBrains Mono',monospace;">All Tables</div>
+        <table class="schema-table">
+          <tr><td class="col-name" style="color:var(--text2);">companies</td><td class="col-note">Company registry, ATS type, career page URL</td></tr>
+          <tr><td class="col-name" style="color:var(--text2);">users</td><td class="col-note">JWT auth, OAuth provider, subscription tier</td></tr>
+          <tr><td class="col-name" style="color:var(--text2);">saved_jobs</td><td class="col-note">User ↔ Job bookmarks</td></tr>
+          <tr><td class="col-name" style="color:var(--text2);">job_alerts</td><td class="col-note">Saved search criteria + digest frequency</td></tr>
+          <tr><td class="col-name" style="color:var(--text2);">hr_company_registrations</td><td class="col-note">Self-service HR portal submissions</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Endpoints -->
+  <div class="section-label">REST API Endpoints — /api/v1</div>
+  <div class="endpoint-list mb-40">
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/jobs</span><span class="endpoint-desc">Search & filter jobs (OpenSearch)</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/jobs/{id}</span><span class="endpoint-desc">Single job detail + sources</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/jobs/{id}/sources</span><span class="endpoint-desc">All platforms this job appears on</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/companies</span><span class="endpoint-desc">Company list with job counts</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/companies/{slug}</span><span class="endpoint-desc">Company detail + all openings</span></div>
+    <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/auth/register</span><span class="endpoint-desc">Email/password registration</span></div>
+    <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/auth/login</span><span class="endpoint-desc">JWT token issue</span></div>
+    <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/auth/oauth/{provider}</span><span class="endpoint-desc">Google / LinkedIn OAuth2</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/users/me/saved-jobs</span><span class="endpoint-desc">User saved jobs list</span></div>
+    <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/users/me/saved-jobs/{id}</span><span class="endpoint-desc">Save a job</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/users/me/alerts</span><span class="endpoint-desc">User's job alerts</span></div>
+    <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/users/me/alerts</span><span class="endpoint-desc">Create new alert (search criteria)</span></div>
+    <div class="endpoint-row"><span class="method method-del">DEL</span><span class="endpoint-path">/users/me/alerts/{id}</span><span class="endpoint-desc">Delete alert</span></div>
+    <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/hr/register</span><span class="endpoint-desc">HR Direct Portal — company self-register</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/admin/companies</span><span class="endpoint-desc">Admin — company management (auth-gated)</span></div>
+    <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/health</span><span class="endpoint-desc">Health check — returns version + status</span></div>
+  </div>
+
+  <!-- Crawlers -->
+  <div class="section-label">Scrapy Spider Architecture</div>
+  <div class="grid-3 mb-40">
+    <div class="card card-green">
+      <div class="card-icon icon-green">🌿</div>
+      <h3>greenhouse.py</h3>
+      <p>Hits <span class="mono" style="font-size:11px; color:#7dd3fc;">boards.greenhouse.io/&lt;company&gt;</span> JSON API. Paginated. Extracts structured job data directly — no HTML parsing needed. Covers 40+ Indian companies.</p>
+    </div>
+    <div class="card card-orange">
+      <div class="card-icon icon-orange">🎯</div>
+      <h3>lever.py</h3>
+      <p>Hits <span class="mono" style="font-size:11px; color:#7dd3fc;">jobs.lever.co/&lt;company&gt;</span>. Parses JSON embed. Extracts role, team, location, apply URL. Fast — no JS rendering required.</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-icon icon-blue">🤖</div>
+      <h3>generic_career_page.py</h3>
+      <p>Playwright-based. Renders JS SPAs. Uses CSS selectors + heuristics to identify job listings. Handles Workday, Taleo, iCIMS, BambooHR, and custom career pages.</p>
+    </div>
+    <div class="card card-accent">
+      <div class="card-icon icon-purple">🔎</div>
+      <h3>google_jobs_schema.py</h3>
+      <p>Extracts <span class="mono" style="font-size:11px; color:#7dd3fc;">application/ld+json</span> JobPosting schema from company sites. Companies voluntarily publish these — cleanest, most legal data source.</p>
+    </div>
+    <div class="card card-pink">
+      <div class="card-icon icon-pink">🇮🇳</div>
+      <h3>indeed_india.py</h3>
+      <p>Public listing pages (no login). Respects <span class="mono" style="font-size:11px; color:#7dd3fc;">robots.txt</span>, crawl-delay. Stores metadata + source URL only — not full JD text (copyright).</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--text3);">
+      <div class="card-icon" style="background:rgba(255,255,255,0.05);">⏰</div>
+      <h3>Crawl Schedule</h3>
+      <p>Celery Beat runs schedules per spider type: career pages every <strong style="color:var(--text);">4h</strong>, public boards every <strong style="color:var(--text);">12h</strong>, freshness checks every <strong style="color:var(--text);">6h</strong>. Configurable via YAML.</p>
+    </div>
+  </div>
+
+  <!-- Celery Tasks -->
+  <div class="section-label">Celery Task Breakdown</div>
+  <div class="code-block mb-40">
+    <div class="code-block-header">
+      <div class="code-dot" style="background:#ff5f57;"></div>
+      <div class="code-dot" style="background:#ffbd2e;"></div>
+      <div class="code-dot" style="background:#27c93f;"></div>
+      <span class="code-file">tasks/crawl_tasks.py</span>
+    </div>
+    <pre><span class="cm"># Crawl task — triggered by Beat or manually</span>
+<span class="kw">@app</span>.task(<span class="str">name</span>=<span class="str">"crawl_company_career_page"</span>, max_retries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">crawl_company</span>(company_id: <span class="typ">str</span>, spider_type: <span class="typ">str</span>):
+    <span class="cm"># 1. Fetch company from DB</span>
+    <span class="cm"># 2. Run appropriate Scrapy spider</span>
+    <span class="cm"># 3. For each item: normalize → dedup → upsert to PG + OS</span>
+    ...
+
+<span class="kw">@app</span>.task(<span class="str">name</span>=<span class="str">"check_job_freshness"</span>)
+<span class="kw">def</span> <span class="fn">check_freshness</span>(job_id: <span class="typ">str</span>):
+    <span class="cm"># Re-fetch source URL, mark is_active=False if 404</span>
+    ...
+
+<span class="kw">@app</span>.task(<span class="str">name</span>=<span class="str">"send_alert_digest"</span>)
+<span class="kw">def</span> <span class="fn">send_alerts</span>(frequency: <span class="typ">str</span>):
+    <span class="cm"># Find new jobs matching saved alert criteria</span>
+    <span class="cm"># Batch email via SES / SMTP</span>
+    ...</pre>
+  </div>
+
+  <!-- AWS Infrastructure -->
+  <div class="section-label">AWS Infrastructure (Terraform)</div>
+  <div class="infra-grid mb-40">
+    <div class="infra-card">
+      <div class="infra-icon">⚙️</div>
+      <div><div class="infra-name">ECS Fargate</div><div class="infra-desc">Containers: FastAPI API, Celery Worker, Celery Beat, Frontend Next.js. Auto-scaling per CPU/memory.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">🗄️</div>
+      <div><div class="infra-name">RDS PostgreSQL 16</div><div class="infra-desc">Multi-AZ in production. db.t3.medium to start. Read replica for analytics queries.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">⚡</div>
+      <div><div class="infra-name">ElastiCache Redis 7</div><div class="infra-desc">Celery broker (DB 0), Celery results (DB 1), API response cache (DB 2). cache.t3.micro to start.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">🔍</div>
+      <div><div class="infra-name">OpenSearch Service</div><div class="infra-desc">Full-text search index for jobs. t3.small.search, 1 node dev → 3-node cluster prod.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">🌐</div>
+      <div><div class="infra-name">S3 + CloudFront</div><div class="infra-desc">Static assets, Next.js static export. CloudFront edge caching. Route 53 for joblens.in DNS.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">🔐</div>
+      <div><div class="infra-name">ECR + Secrets Manager</div><div class="infra-desc">Docker images stored in ECR. DB passwords, API keys in Secrets Manager — never in code.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">🚀</div>
+      <div><div class="infra-name">GitHub Actions CI/CD</div><div class="infra-desc">On merge to main: build → test → Docker push to ECR → ECS service update. Zero-downtime rolling deploy.</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">📊</div>
+      <div><div class="infra-name">CloudWatch</div><div class="infra-desc">Container logs, ECS task metrics, custom metrics (jobs crawled/hr, dedup rate, alert emails sent).</div></div>
+    </div>
+    <div class="infra-card">
+      <div class="infra-icon">📍</div>
+      <div><div class="infra-name">Region: ap-south-1</div><div class="infra-desc">Mumbai — lowest latency for Indian users. All data residency within India. DPDPA-compliant.</div></div>
+    </div>
+  </div>
+
+  <!-- Local Dev -->
+  <div class="section-label">Local Development</div>
+  <div class="code-block mb-40">
+    <div class="code-block-header">
+      <div class="code-dot" style="background:#ff5f57;"></div>
+      <div class="code-dot" style="background:#ffbd2e;"></div>
+      <div class="code-dot" style="background:#27c93f;"></div>
+      <span class="code-file">docker-compose.yml — Full local stack in one command</span>
+    </div>
+    <pre><span class="cm"># All services: FastAPI :8000, Next.js :3000, PG :5432, Redis :6379, OpenSearch :9200</span>
+<span class="fn">docker compose up -d</span>
+
+<span class="cm"># Run DB migrations</span>
+<span class="fn">alembic upgrade head</span>
+
+<span class="cm"># Seed 70+ Indian companies</span>
+<span class="fn">python infra/scripts/seed_companies.py</span>
+
+<span class="cm"># Services defined:</span>
+<span class="cm">#  api          → uvicorn app.main:app --reload</span>
+<span class="cm">#  celery-worker → celery -A tasks worker --loglevel=info</span>
+<span class="cm">#  celery-beat  → celery -A tasks beat --loglevel=info</span>
+<span class="cm">#  frontend     → npm run dev</span>
+<span class="cm">#  postgres     → postgres:16-alpine</span>
+<span class="cm">#  redis        → redis:7-alpine</span>
+<span class="cm">#  opensearch   → opensearchproject/opensearch:2.17.0</span></pre>
+  </div>
+
+  <!-- Legal Strategy -->
+  <div class="section-label">Legal Strategy — Tiered Crawling</div>
+  <div class="legal-grid mb-40">
+    <div class="legal-card legal-safe">
+      <div class="legal-header" style="color:var(--green);">✅ Tier 1 — Fully Safe</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--green);"></div>Company career pages (public, voluntary)</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--green);"></div>Google for Jobs JobPosting schema</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--green);"></div>HR/company partnerships (opt-in)</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--green);"></div>Public APIs / RSS/Atom feeds</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--green);"></div>Greenhouse / Lever public JSON APIs</div>
+    </div>
+    <div class="legal-card legal-caution">
+      <div class="legal-header" style="color:var(--yellow);">⚠️ Tier 2 — Proceed with Caution</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--yellow);"></div>Public job board pages (no login)</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--yellow);"></div>Respect robots.txt + crawl-delay</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--yellow);"></div>Store metadata + link only, not full JD</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--yellow);"></div>Attribution back to source</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--yellow);"></div>hiQ v LinkedIn (2022) precedent</div>
+    </div>
+    <div class="legal-card legal-avoid">
+      <div class="legal-header" style="color:var(--red);">❌ Tier 3 — Avoid</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--red);"></div>Login-wall content (LinkedIn, Naukri)</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--red);"></div>Bypassing CAPTCHAs / IP blocks</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--red);"></div>Full copyrighted JD text storage</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--red);"></div>Personal/candidate profile data</div>
+      <div class="legal-item"><div class="legal-item-dot" style="background:var(--red);"></div>ToS-violating scraping</div>
+    </div>
+  </div>
+
+  <!-- Security & Auth -->
+  <div class="section-label">Security & Auth</div>
+  <div class="grid-3 mb-40">
+    <div class="card card-accent">
+      <div class="card-icon icon-purple">🔑</div>
+      <h3>JWT + OAuth2</h3>
+      <p>Short-lived access tokens (15min) + refresh tokens (7d) stored in httpOnly cookies. OAuth2 via Google and LinkedIn — no password stored for social auth.</p>
+    </div>
+    <div class="card card-green">
+      <div class="card-icon icon-green">🛡️</div>
+      <h3>DPDPA Compliance</h3>
+      <p>India DPDPA 2023: explicit consent for email alerts. No personal candidate data scraped. All user data deletable on request. Data stored in ap-south-1 (India).</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-icon icon-blue">🔒</div>
+      <h3>Secrets Management</h3>
+      <p>Zero secrets in code. AWS Secrets Manager for DB passwords, API keys. <span class="mono" style="font-size:11px;">JWT_SECRET_KEY</span> rotated monthly. ECR image scanning enabled.</p>
+    </div>
+  </div>
+
+  <!-- Highlight -->
+  <div class="highlight-box">
+    <h3>📁 Project Structure at a Glance</h3>
+    <p>
+      <strong style="color:var(--text);">backend/app/</strong> — FastAPI core (api/v1, core config, models, schemas, services, crud, utils)<br/>
+      <strong style="color:var(--text);">backend/crawlers/</strong> — Scrapy project with 5 spiders + normalize/dedup/store pipelines<br/>
+      <strong style="color:var(--text);">backend/tasks/</strong> — Celery tasks for crawl, dedup, alerts, freshness<br/>
+      <strong style="color:var(--text);">backend/tests/</strong> — pytest suite covering health, auth, jobs, dedup logic<br/>
+      <strong style="color:var(--text);">frontend/src/app/</strong> — Next.js App Router: /, /jobs, /jobs/[id], /companies/[slug], /dashboard, /auth, /hr<br/>
+      <strong style="color:var(--text);">infra/terraform/</strong> — VPC, ECS, RDS, Redis, OpenSearch, full AWS stack<br/>
+      <strong style="color:var(--text);">infra/scripts/</strong> — seed_companies.py (70+ companies), setup_dev.sh<br/>
+      <strong style="color:var(--text);">prototype/</strong> — Static HTML UI demo, live at <a href="https://nnistala.github.io/joblens-prototype/" style="color:var(--accent);" target="_blank">GitHub Pages ↗</a>
+    </p>
+  </div>
+
+</div><!-- end tech panel -->
+</div><!-- end content-area -->
+
+<footer>
+  JobLens · Built by <strong>Nagasai</strong> · <a href="https://github.com/nnistala/joblens" target="_blank" style="color:var(--accent); text-decoration:none;">github.com/nnistala/joblens</a> · 2026
+</footer>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+</script>
+</body>
+</html>
